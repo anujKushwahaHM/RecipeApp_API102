@@ -56,7 +56,7 @@ namespace RecipeAppAPI.Controllers
         [Route("UpdateRecipe/{id}")]
         public async Task<IActionResult> UpdateRecipe(int id, Recipe recipe)
         {
-            if (id != recipe.RecipeId)
+            if (id == 0)
             {
                 return BadRequest();
             }
@@ -86,16 +86,25 @@ namespace RecipeAppAPI.Controllers
         [Route("DeleteRecipe/{id}")]
         public async Task<IActionResult> DeleteRecipe(int id)
         {
-            var recipe = await _context.Recipes.FindAsync(id);
-            if (recipe == null)
-            {
-                return NotFound();
-            }
 
-            _context.Recipes.Remove(recipe);
-            await _context.SaveChangesAsync();
+            var recipe = await _context.Recipes
+           .Include(r => r.Ingredients)
+           .FirstOrDefaultAsync(r => r.RecipeId == id);
 
-            return NoContent();
+                if (recipe == null)
+                {
+                    return NotFound();
+                }
+
+                // Delete related ingredients first
+                _context.Ingredients.RemoveRange(recipe.Ingredients);
+
+                // Then delete the recipe
+                _context.Recipes.Remove(recipe);
+
+                await _context.SaveChangesAsync();
+
+                return NoContent();
         }
 
         private bool RecipeExists(int id)
