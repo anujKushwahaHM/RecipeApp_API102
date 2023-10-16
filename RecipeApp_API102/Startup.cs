@@ -37,6 +37,14 @@ namespace RecipeAppAPI
 
             services.ConfigureReadOnlyDbContext();
 
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAngularApp",
+                    builder => builder.WithOrigins("http://localhost:4200")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod());
+            });
+
             services.AddSwaggerGen();
 
             var serviceProvider = services.BuildServiceProvider();
@@ -55,6 +63,8 @@ namespace RecipeAppAPI
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
+            app.UseCors("AllowAngularApp");
 
             app.UseAuthorization();
 

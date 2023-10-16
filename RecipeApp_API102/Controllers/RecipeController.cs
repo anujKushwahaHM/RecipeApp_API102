@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using RecipeAppAPI;
 using RecipeAppAPI.Database;
 using System;
 using System.Collections.Generic;
@@ -9,107 +10,97 @@ using System.Threading.Tasks;
 
 namespace RecipeAppAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/recipes")]
     [ApiController]
     public class RecipeController : Controller
     {
-        public RecipeDataContext DbContext;
+        private readonly RecipeDataContext _context;
+
         public RecipeController(RecipeDataContext context)
         {
-            DbContext = context;
+            _context = context;
         }
 
-        [Route("GetAllRecipe")]
         [HttpGet]
-        public async Task<List<Recipe>> GetAllRecipe()
+        [Route("GetAllRecipe")]
+        public async Task<ActionResult<IEnumerable<Recipe>>> GetAllRecipes()
         {
-            List<Recipe> response = new List<Recipe>();
+            var recipes = await _context.Recipes.Include(r => r.Ingredients).ToListAsync();
+            return Ok(recipes);
+        }
+
+        [HttpPost]
+        [Route("CreateRecipe")]
+        public async Task<ActionResult<Recipe>> CreateRecipe(Recipe recipe)
+        {
+            _context.Recipes.Add(recipe);
+            await _context.SaveChangesAsync();
+            return CreatedAtAction("GetRecipe", new { id = recipe.RecipeId }, recipe);
+        }
+
+        [HttpGet]
+        [Route("GetRecipe/{id}")]
+        public async Task<ActionResult<Recipe>> GetRecipe(int id)
+        {
+            var recipe = await _context.Recipes.Include(r => r.Ingredients).FirstOrDefaultAsync(r => r.RecipeId == id);
+
+            if (recipe == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(recipe);
+        }
+
+        [HttpPut]
+        [Route("UpdateRecipe/{id}")]
+        public async Task<IActionResult> UpdateRecipe(int id, Recipe recipe)
+        {
+            if (id != recipe.RecipeId)
+            {
+                return BadRequest();
+            }
+
+            _context.Entry(recipe).State = EntityState.Modified;
 
             try
             {
-                var list = DbContext.Set<Recipe>().ToListAsync().Result;
-                foreach (var item in list)
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!RecipeExists(id))
                 {
-                    response.Add(item);
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
                 }
             }
-            catch (Exception ex)
-            {
-                response = new List<Recipe>();
-            }
 
-            return response;
+            return NoContent();
         }
 
-        [Route("CreateRecipe")]
-        [HttpPost]
-        public async Task<Recipe> CreateRecipe(Recipe model)
-        {
-            Recipe response = new Recipe();
-            try
-            {
-                DbContext.Set<Recipe>().Add(model);
-                int id = DbContext.SaveChangesAsync().Result;
-                response = DbContext.Set<Recipe>().FindAsync(id).Result;
-            }
-            catch (Exception ex)
-            {
-                response = new Recipe();
-            }
-            return response;
-        }
-
-        [Route("GetRecipe")]
-        [HttpGet]
-        public async Task<Recipe> GetRecipe(int recipeId = 0)
-        {
-            Recipe response = new Recipe();
-            try
-            {
-                response = DbContext.Set<Recipe>().FindAsync(recipeId).Result;
-            }
-            catch (Exception ex)
-            {
-                response = new Recipe();
-            }
-            return response;
-        }
-
-        [Route("UpdateRecipe")]
-        [HttpPut]
-        public async Task<bool> UpdateRecipe(Recipe model)
-        {
-            bool response = false;
-            try
-            {
-                DbContext.Set<Recipe>().Update(model);
-                await DbContext.SaveChangesAsync();
-                response = true;
-            }
-            catch (Exception ex)
-            {
-                response = false;
-            }
-            return response;
-        }
-
-        [Route("DeleteRecipe")]
         [HttpDelete]
-        public async Task<bool> DeleteRecipe(int recipeId = 0)
+        [Route("DeleteRecipe/{id}")]
+        public async Task<IActionResult> DeleteRecipe(int id)
         {
-            bool response = false;
-            try
+            var recipe = await _context.Recipes.FindAsync(id);
+            if (recipe == null)
             {
-                var entity = DbContext.Set<Recipe>().FindAsync(recipeId).Result;
-                DbContext.Set<Recipe>().Remove(entity);
-                await DbContext.SaveChangesAsync();
-                response = true;
+                return NotFound();
             }
-            catch (Exception)
-            {
-                response = false;
-            }
-            return response;
+
+            _context.Recipes.Remove(recipe);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        private bool RecipeExists(int id)
+        {
+            return _context.Recipes.Any(e => e.RecipeId == id);
         }
     }
 }

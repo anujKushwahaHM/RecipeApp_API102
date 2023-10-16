@@ -12,6 +12,7 @@ namespace RecipeAppAPI.Database
         public RecipeDataContext(DbContextOptions<RecipeDataContext> options) : base(options) { }
 
         public DbSet<Recipe> Recipes { get; set; }
+        public DbSet<Ingredient> Ingredients { get; set; }
 
         public class YourDbContextFactory : IDesignTimeDbContextFactory<RecipeDataContext>
         {
