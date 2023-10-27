@@ -15,7 +15,9 @@ namespace RecipeAppAPI.Migrations
         public void ApplyMigrations()
         {
             // Apply pending migrations to the database
-            _context.Database.Migrate();
+            // Uncomment the line when running for the first time.
+
+            //_context.Database.Migrate();
         }
     }
 }

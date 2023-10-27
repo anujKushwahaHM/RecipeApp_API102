@@ -19,7 +19,6 @@ namespace RecipeAppAPI
         [Required]
         public string ImagePath { get; set; }
 
-        // Define a navigation property to represent the related ingredients.
         public List<Ingredient> Ingredients { get; set; }
     }
 

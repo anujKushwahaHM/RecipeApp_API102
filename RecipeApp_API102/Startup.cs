@@ -31,7 +31,7 @@ namespace RecipeAppAPI
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            //var connectionString = "Server=localhost\\SQLEXPRESS;Initial Catalog=RecipeBook;Integrated Security=True; TrustServerCertificate=True; Encrypt=false";
+            //var connectionString = "Server=localhost\\SQLEXPRESS;Initial Catalog=RecipeBook2;Integrated Security=True; TrustServerCertificate=True; Encrypt=false";
             services.AddDbContext<RecipeDataContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("YourDatabaseConnection")));
 
